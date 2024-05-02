@@ -47,11 +47,11 @@ for ii in range(nAlpha):
         alphas.append(alphaD)
     else:
         alphas.append(alphaG)
-        radii = np.ones(nAlpha)*radius
-        offset = 0.0
-        controlRadius = 2.0*wavelength
-        positions = np.zeros(nAlpha*2,dtype=np.double)
-        distFlag = 1
+radii = np.ones(nAlpha)*radius
+offset = 0.0
+controlRadius = 2.0*wavelength
+positions = np.zeros(nAlpha*2,dtype=np.double)
+distFlag = 1
 for ii in range(300):
     rr = np.random.rand(nAlpha)*controlRadius
     aa = np.random.rand(nAlpha)*2.0*np.pi
