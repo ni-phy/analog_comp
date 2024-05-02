@@ -198,11 +198,11 @@ if __name__ == '__main__':
     alphaD = gyro.GetAlpha_Dielectric(omega,siEpsilon,cHost,epHost,radius,loss)
     #
     # design parameters
-    nAlpha = 3
+    nAlpha = 5
     alphas = []
     ## atype == 0: dielectric; == 1: gyrotropic
     atype = np.zeros(nAlpha,dtype=np.int32)
-    atype[int(nAlpha/2):] = 1
+    #atype[int(nAlpha/2):] = 1
     #atype = np.random.randint(2,size=nAlpha)
     #atype = np.zeros(nAlpha)
     #atype = np.ones(nAlpha)
