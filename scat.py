@@ -225,11 +225,12 @@ if __name__ == '__main__':
         if des.DistanceCheck(positions,radii,offset) == 0:
             distFlag = 0
             break
+    distFlag = des.DistanceCheck(positions,radii,offset)
     if distFlag == 1:
         print("rerun")
         exit()
     # port definition
-    nPort = 3
+    nPort = 5
     obsRadius = controlRadius*1.5
     normalize = True
     scat = GetScatteringMatrix(positions,alphas,omega,cHost,epHost,nPort,obsRadius,normalize)

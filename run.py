@@ -19,8 +19,8 @@ plt.rcParams['mathtext.rm'] = 'serif'
 
 #
 title = 'des'
-targetName = 'test_diel_stif.data'
-posName = 'test_diel_pos.data'
+targetName = 'test_stif.data'
+posName = 'test_pos.data'
 # parameters
 vacuumC = 299792458
 vacuumMu = 4.0e-7*np.pi
@@ -52,7 +52,7 @@ for jj in range(nAlpha):
         positions[2*jj] = data[jj][0]+float(np.random.rand(1))*10e-6
         positions[2*jj+1] = data[jj][1]+float(np.random.rand(1))*10e-6
         atype[jj] = data[jj][2]
-print(positions)
+
 #atype = np.random.randint(2,size=nAlpha)
 #atype = np.zeros(nAlpha)
 #atype = np.ones(nAlpha)
@@ -64,7 +64,6 @@ for ii in range(nAlpha):
 radii = np.ones(nAlpha)*radius
 offset = 0.0
 controlRadius = 2.0*wavelength
-positions = np.zeros(nAlpha*2,dtype=np.double)
 distFlag = 1
 # for ii in range(300):
 #     rr = np.random.rand(nAlpha)*controlRadius
@@ -79,7 +78,7 @@ distFlag = des.DistanceCheck(positions,radii,offset)
 if distFlag == 1:
     print("rerun")
     exit()
-#port definition
+# port definition
 nPort = 5
 obsRadius = controlRadius*1.5
 normalize = True
@@ -112,7 +111,7 @@ print(obj)
 print(flag)
 print(newPositions)
 smat = scat.GetScatteringMatrix(newPositions,alphas,omega,cHost,epHost,nPort,obsRadius,normalize)
-
+print(smat)
 stif = np.linalg.inv(smat)
 
 plt.figure()
