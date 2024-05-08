@@ -18,7 +18,7 @@ plt.rcParams['mathtext.fontset'] = 'cm'
 plt.rcParams['mathtext.rm'] = 'serif'
 
 #
-title = 'des'
+title = 'des_mix'
 targetName = 'test_stif.data'
 posName = 'test_pos.data'
 # parameters
@@ -95,14 +95,16 @@ perturb = radius*1.0e-8
 maxIter = 1000
 clength = radius*1.0e-1
 
-algorithm = nlopt.LD_MMA
-solver = nlopt.opt(algorithm, len(positions))
-solver.set_min_objective(lambda x, grad: des.Objective(x, params))
-solver.set_maxeval(maxIter)
-solver.set_initial_step(perturb)
-solver.set_ftol_rel(1e-6)
-newPositions = solver.optimize(positions)
-
+for i in range(5):
+    algorithm = nlopt.LD_MMA
+    solver = nlopt.opt(algorithm, len(positions))
+    solver.set_min_objective(lambda x, grad: des.Objective(x, params))
+    solver.set_maxeval(maxIter)
+    solver.set_initial_step(perturb)
+    solver.set_ftol_rel(10**(-i))
+    x = solver.optimize(positions)
+    
+newPositions = x
 obj = des.Objective(newPositions, params)
 flag = 1
 # how about using basin hopping?
