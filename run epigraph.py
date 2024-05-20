@@ -49,8 +49,8 @@ positions = np.zeros(nAlpha*2, dtype=np.double)
 with open(posName) as f:
     data = [[float(num) for num in line.split()] for line in f]
 for jj in range(nAlpha):
-        positions[2*jj] = data[jj][0]+float(np.random.rand(1))*10e-6
-        positions[2*jj+1] = data[jj][1]+float(np.random.rand(1))*10e-6
+        positions[2*jj] = data[jj][0]+float(np.random.rand(1))*10e-7
+        positions[2*jj+1] = data[jj][1]+float(np.random.rand(1))*10e-7
         atype[jj] = data[jj][2]
 
 #atype = np.random.randint(2,size=nAlpha)
@@ -92,10 +92,12 @@ for ii in range(nPort):
         target[ii,jj] = data[ii][2*jj]+1j*data[ii][2*jj+1]
 
 params = [alphas,omega,cHost,epHost,nPort,obsRadius,normalize,target]
-maxIter = radius*1.0e-10
-maxIter = 1000
-clength = radius*1.0e-1
 perturb = radius*1.0e-10
+maxIter = 2
+clength = radius*1.0e-1
+x = np.insert(positions, 0, 0)
+
+algorithm = nlopt.LD_MMA
 
 def f(x, grad):
     t = x[0]  # "dummy" parameter
@@ -109,28 +111,30 @@ def c(result, x, gradient, params, perturb):
     t = x[0]  # dummy parameter
     v = x[1:] # design parameters
 
-    f0 = des.Objective(x, params)
-    my_grad = des.Gradient(x, params, f0, perturb)
-    
+    f0 = des.Objective(v, params)
+    my_grad = des.Gradient(x, params, f0, perturb) 
+
     # Assign gradients
     if gradient.size > 0:
         gradient[0] = -1  # gradient w.r.t. "t"
         gradient[1:] = my_grad.T  # gradient w.r.t. objective
 
     result[:] = np.real(f0) - t
-        
-x = np.insert(positions, 0, 0)
-algorithm = nlopt.LD_MMA
-solver = nlopt.opt(algorithm, len(positions) + 1)
-solver.set_min_objective(f)
-solver.set_maxeval(maxIter)
-solver.set_ftol_rel(1e-4)
-solver.add_inequality_mconstraint(
-    lambda r, x, g: c(r, x, g, params, perturb), np.array([1e-3])
-)
-x[:] = solver.optimize(x)
 
-newPositions = x
+for i in range(20):
+    # perturb += perturb
+    # for i in range(1, 1+len(positions)):
+    #     x[i] +=  +float(np.random.rand(1))*10e-6
+    solver = nlopt.opt(algorithm, len(positions) + 1)
+    solver.set_min_objective(f)
+    solver.set_maxeval(maxIter)
+    solver.set_ftol_rel(1e-5)
+    solver.add_inequality_mconstraint(
+        lambda r, x, g: c(r, x, g, params, perturb), np.array([1e-3])
+    )
+    x[:] = solver.optimize(x)
+
+newPositions = x[1:]
 obj = des.Objective(newPositions, params)
 flag = 1
 # how about using basin hopping?
