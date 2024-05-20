@@ -92,7 +92,7 @@ for ii in range(nPort):
         target[ii,jj] = data[ii][2*jj]+1j*data[ii][2*jj+1]
 
 params = [alphas,omega,cHost,epHost,nPort,obsRadius,normalize,target]
-perturb = radius*1.0e-10
+perturb = radius*1.0e-8
 maxIter = 2
 clength = radius*1.0e-1
 x = np.insert(positions, 0, 0)
@@ -112,12 +112,14 @@ def c(result, x, gradient, params, perturb):
     v = x[1:] # design parameters
 
     f0 = des.Objective(v, params)
-    my_grad = des.Gradient(x, params, f0, perturb) 
+    my_grad = des.Gradient(v, params, f0, perturb) 
+
+    print('Cost', f0)
 
     # Assign gradients
     if gradient.size > 0:
-        gradient[0] = -1  # gradient w.r.t. "t"
-        gradient[1:] = my_grad.T  # gradient w.r.t. objective
+        gradient[0,0] = -1  # gradient w.r.t. "t"
+        gradient[0,1:] = my_grad  # gradient w.r.t. objective
 
     result[:] = np.real(f0) - t
 
