@@ -5,6 +5,7 @@ import scat as scat
 import gyroGen as gyro
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from autograd import numpy as npa
 import scipy.special as ss
 from scipy import optimize
 import os
@@ -18,7 +19,7 @@ plt.rcParams['mathtext.fontset'] = 'cm'
 plt.rcParams['mathtext.rm'] = 'serif'
 
 #
-title = 'des_mix'
+title = 'des_gyro'
 targetName = 'test_stif.data'
 posName = 'test_pos.data'
 # parameters
@@ -49,8 +50,8 @@ positions = np.zeros(nAlpha*2, dtype=np.double)
 with open(posName) as f:
     data = [[float(num) for num in line.split()] for line in f]
 for jj in range(nAlpha):
-        positions[2*jj] = data[jj][0]+float(np.random.rand(1))*10e-6
-        positions[2*jj+1] = data[jj][1]+float(np.random.rand(1))*10e-6
+        positions[2*jj] = data[jj][0]+float(np.random.rand(1))*10e-4
+        positions[2*jj+1] = data[jj][1]+float(np.random.rand(1))*10e-4
         atype[jj] = data[jj][2]
 
 #atype = np.random.randint(2,size=nAlpha)
@@ -65,6 +66,7 @@ radii = np.ones(nAlpha)*radius
 offset = 0.0
 controlRadius = 2.0*wavelength
 distFlag = 1
+
 # for ii in range(300):
 #     rr = np.random.rand(nAlpha)*controlRadius
 #     aa = np.random.rand(nAlpha)*2.0*np.pi
@@ -91,19 +93,24 @@ for ii in range(nPort):
         target[ii,jj] = data[ii][2*jj]+1j*data[ii][2*jj+1]
 
 params = [alphas,omega,cHost,epHost,nPort,obsRadius,normalize,target]
-perturb = radius*1.0e-8
-maxIter = 1000
+perturb = radius*1.0e-10
+maxIter = 40
 clength = radius*1.0e-1
+algorithm = nlopt.GN_ESCH
+x=npa.array(positions)
 
-for i in range(5):
-    algorithm = nlopt.LD_MMA
-    solver = nlopt.opt(algorithm, len(positions))
-    solver.set_min_objective(lambda x, grad: des.Objective(x, params))
-    solver.set_maxeval(maxIter)
-    solver.set_initial_step(perturb)
-    solver.set_ftol_rel(10**(-i))
-    x = solver.optimize(positions)
-    
+# # for i in range(6,8):
+solver = nlopt.opt(algorithm, len(positions))
+solver.set_min_objective(lambda obj, grad: des.ObjGrad(x, params, perturb))
+solver.set_lower_bounds(-controlRadius)
+solver.set_upper_bounds(controlRadius)
+solver.set_maxeval(maxIter)
+solver.set_initial_step(radius)
+solver.set_ftol_rel(10**(-5))
+x = solver.optimize(x)
+
+# newPositions,obj,flag = des.Inverse(positions,params,radii,offset,perturb,maxIter,clength)
+print(x)
 newPositions = x
 obj = des.Objective(newPositions, params)
 flag = 1
@@ -124,7 +131,7 @@ maxstif = np.max(np.max(np.abs(stif)))
 scat.printMat(np.real(smat),title+'_re',-1,1)
 scat.printMat(np.imag(smat),title+'_im',-1,1)
 scat.printMat(np.abs(smat),title+'_abs',0,1)
-scat.printMat(np.real(mult),title+'_mult',0,1)
+scat.printMat(np.real(mult)/np.max(np.real(mult)),title+'_mult',0,1)
 scat.printMat(np.real(stif),title+'_inv_re',-maxstif,maxstif)
 scat.printMat(np.imag(stif),title+'_inv_im',-maxstif,maxstif)
 scat.printMat(np.abs(stif),title+'_inv_abs',0,maxstif)
