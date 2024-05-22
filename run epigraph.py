@@ -46,15 +46,15 @@ atype = np.zeros(nAlpha,dtype=np.int32)
 
 #importing positions and adding random element
 positions = np.zeros(nAlpha*2, dtype=np.double)
-with open(posName) as f:
-    data = [[float(num) for num in line.split()] for line in f]
-for jj in range(nAlpha):
-        positions[2*jj] = data[jj][0]+float(np.random.rand(1))*10e-7
-        positions[2*jj+1] = data[jj][1]+float(np.random.rand(1))*10e-7
-        atype[jj] = data[jj][2]
+# with open(posName) as f:
+#     data = [[float(num) for num in line.split()] for line in f]
+# for jj in range(nAlpha):
+#         positions[2*jj] = data[jj][0]+float(np.random.rand(1))*10e-5
+#         positions[2*jj+1] = data[jj][1]+float(np.random.rand(1))*10e-5
+#         atype[jj] = data[jj][2]
 
 #atype = np.random.randint(2,size=nAlpha)
-#atype = np.zeros(nAlpha)
+atype = np.zeros(nAlpha)
 #atype = np.ones(nAlpha)
 for ii in range(nAlpha):
     if atype[ii] == 0:
@@ -66,15 +66,15 @@ offset = 0.0
 controlRadius = 2.0*wavelength
 distFlag = 1
 
-# for ii in range(300):
-#     rr = np.random.rand(nAlpha)*controlRadius
-#     aa = np.random.rand(nAlpha)*2.0*np.pi
-#     for jj in range(nAlpha):
-#         positions[2*jj] = rr[jj]*np.cos(aa[jj])
-#         positions[2*jj+1] = rr[jj]*np.sin(aa[jj])
-#     if des.DistanceCheck(positions,radii,offset) == 0:
-#         distFlag = 0
-#         break
+for ii in range(300):
+    rr = np.random.rand(nAlpha)*controlRadius
+    aa = np.random.rand(nAlpha)*2.0*np.pi
+    for jj in range(nAlpha):
+        positions[2*jj] = rr[jj]*np.cos(aa[jj])
+        positions[2*jj+1] = rr[jj]*np.sin(aa[jj])
+    if des.DistanceCheck(positions,radii,offset) == 0:
+        distFlag = 0
+        break
 distFlag = des.DistanceCheck(positions,radii,offset)
 if distFlag == 1:
     print("rerun")
@@ -92,8 +92,8 @@ for ii in range(nPort):
         target[ii,jj] = data[ii][2*jj]+1j*data[ii][2*jj+1]
 
 params = [alphas,omega,cHost,epHost,nPort,obsRadius,normalize,target]
-perturb = radius*1.0e-8
-maxIter = 2
+perturb = radius*1.0e-11
+maxIter = 1000
 clength = radius*1.0e-1
 x = np.insert(positions, 0, 0)
 
@@ -107,6 +107,11 @@ def f(x, grad):
         grad[1:] = 0
     return t
 
+eval_history = []
+eval_it = [0]
+max_f0 = [1e3]
+best_position = positions
+
 def c(result, x, gradient, params, perturb):
     t = x[0]  # dummy parameter
     v = x[1:] # design parameters
@@ -114,29 +119,34 @@ def c(result, x, gradient, params, perturb):
     f0 = des.Objective(v, params)
     my_grad = des.Gradient(v, params, f0, perturb) 
 
-    print('Cost', f0)
+    print('Eval', eval_it, 'Cost', f0, flush=True)
+    eval_history.append(f0)
+    if f0<max_f0[0]:
+        max_f0[0] = f0
+        best_position = v
 
     # Assign gradients
     if gradient.size > 0:
         gradient[0,0] = -1  # gradient w.r.t. "t"
-        gradient[0,1:] = my_grad  # gradient w.r.t. objective
+        gradient[0,1:] = my_grad*1e-5 # gradient w.r.t. objective
 
     result[:] = np.real(f0) - t
+    eval_it[-1] += 1
 
-for i in range(20):
-    # perturb += perturb
-    # for i in range(1, 1+len(positions)):
-    #     x[i] +=  +float(np.random.rand(1))*10e-6
+for i in range(10):
+    if i>0:
+        for j in range(1, 1+len(positions)):
+            x[j] = best_position[j-1] +float(np.random.rand(1))*10e-8
     solver = nlopt.opt(algorithm, len(positions) + 1)
     solver.set_min_objective(f)
     solver.set_maxeval(maxIter)
     solver.set_ftol_rel(1e-5)
     solver.add_inequality_mconstraint(
-        lambda r, x, g: c(r, x, g, params, perturb), np.array([1e-3])
+        lambda r, x, g: c(r, x, g, params, perturb), np.array([1e-4])
     )
     x[:] = solver.optimize(x)
 
-newPositions = x[1:]
+newPositions = best_position
 obj = des.Objective(newPositions, params)
 flag = 1
 # how about using basin hopping?
@@ -147,6 +157,11 @@ print(newPositions)
 smat = scat.GetScatteringMatrix(newPositions,alphas,omega,cHost,epHost,nPort,obsRadius,normalize)
 print(smat)
 stif = np.linalg.inv(smat)
+
+plt.figure()
+plt.plot(eval_history)
+plt.savefig(title+'eval_history')
+plt.close()
 
 plt.figure()
 plt.plot()
@@ -181,5 +196,5 @@ for ii in range(nPort):
 fout.close()
 fout = open(title+"_pos.data","w")
 for ii in range(nAlpha):
-    fout.write(f"{positions[2*ii]:20.10e}\t{positions[2*ii+1]:20.10e}\t{atype[ii]:d}\n")
+    fout.write(f"{positions[2*ii]:20.10e}\t{positions[2*ii+1]:20.10e}\t{atype[ii]}\n")
 fout.close()
