@@ -93,7 +93,7 @@ for ii in range(nPort):
 
 params = [alphas,omega,cHost,epHost,nPort,obsRadius,normalize,target]
 perturb = radius*1.0e-11
-maxIter = 1000
+maxIter = 10
 clength = radius*1.0e-1
 x = np.insert(positions, 0, 0)
 
@@ -123,7 +123,8 @@ def c(result, x, gradient, params, perturb):
     eval_history.append(f0)
     if f0<max_f0[0]:
         max_f0[0] = f0
-        best_position = v
+        global best_position
+        best_position = np.copy(v)
 
     # Assign gradients
     if gradient.size > 0:
@@ -134,9 +135,10 @@ def c(result, x, gradient, params, perturb):
     eval_it[-1] += 1
 
 for i in range(10):
+    print('Optimization Number: ', i)
     if i>0:
-        for j in range(1, 1+len(positions)):
-            x[j] = best_position[j-1] +float(np.random.rand(1))*10e-8
+        x[1:] = best_position+np.random.randint(0,10, size=len(best_position))*10e-5
+        print(x)
     solver = nlopt.opt(algorithm, len(positions) + 1)
     solver.set_min_objective(f)
     solver.set_maxeval(maxIter)
@@ -167,11 +169,12 @@ plt.figure()
 plt.plot()
 
 mult = np.matmul(smat,target)
+maxmult= np.max(np.real(matmul))
 maxstif = np.max(np.max(np.abs(stif)))
 scat.printMat(np.real(smat),title+'_re',-1,1)
 scat.printMat(np.imag(smat),title+'_im',-1,1)
 scat.printMat(np.abs(smat),title+'_abs',0,1)
-scat.printMat(np.real(mult)/np.max(np.real(mult)),title+'_mult',0,1)
+scat.printMat(np.real(mult),title+'_mult',0,1)
 scat.printMat(np.real(stif),title+'_inv_re',-maxstif,maxstif)
 scat.printMat(np.imag(stif),title+'_inv_im',-maxstif,maxstif)
 scat.printMat(np.abs(stif),title+'_inv_abs',0,maxstif)
