@@ -93,7 +93,7 @@ for ii in range(nPort):
 
 params = [alphas,omega,cHost,epHost,nPort,obsRadius,normalize,target]
 perturb = radius*1.0e-11
-maxIter = 10
+maxIter = 100
 clength = radius*1.0e-1
 x = np.insert(positions, 0, 0)
 
@@ -137,8 +137,7 @@ def c(result, x, gradient, params, perturb):
 for i in range(10):
     print('Optimization Number: ', i)
     if i>0:
-        x[1:] = best_position+np.random.randint(0,10, size=len(best_position))*10e-5
-        print(x)
+        x[1:] = best_position+np.random.randint(0,10, size=len(best_position))*10e-7
     solver = nlopt.opt(algorithm, len(positions) + 1)
     solver.set_min_objective(f)
     solver.set_maxeval(maxIter)
@@ -169,7 +168,7 @@ plt.figure()
 plt.plot()
 
 mult = np.matmul(smat,target)
-maxmult= np.max(np.real(matmul))
+maxmult= np.max(np.real(mult))
 maxstif = np.max(np.max(np.abs(stif)))
 scat.printMat(np.real(smat),title+'_re',-1,1)
 scat.printMat(np.imag(smat),title+'_im',-1,1)
