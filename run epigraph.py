@@ -134,18 +134,37 @@ def c(result, x, gradient, params, perturb):
     result[:] = np.real(f0) - t
     eval_it[-1] += 1
 
-for i in range(10):
-    print('Optimization Number: ', i)
-    if i>0:
-        x[1:] = best_position+np.random.randint(0,10, size=len(best_position))*10e-7
-    solver = nlopt.opt(algorithm, len(positions) + 1)
-    solver.set_min_objective(f)
-    solver.set_maxeval(maxIter)
-    solver.set_ftol_rel(1e-5)
-    solver.add_inequality_mconstraint(
-        lambda r, x, g: c(r, x, g, params, perturb), np.array([1e-4])
-    )
-    x[:] = solver.optimize(x)
+run_num = 0
+
+while max_f0[0]>1:
+    if run_num > 0:
+        for ii in range(300):
+            rr = np.random.rand(nAlpha)*controlRadius
+            aa = np.random.rand(nAlpha)*2.0*np.pi
+            for jj in range(nAlpha):
+                positions[2*jj] = rr[jj]*np.cos(aa[jj])
+                positions[2*jj+1] = rr[jj]*np.sin(aa[jj])
+            if des.DistanceCheck(positions,radii,offset) == 0:
+                distFlag = 0
+                break
+        distFlag = des.DistanceCheck(positions,radii,offset)
+        if distFlag == 1:
+            print("rerun")
+            exit()
+    
+    for i in range(10):
+        print('Optimization Number: ', i)
+        if i>0:
+            x[1:] = best_position+np.random.randint(0,10, size=len(best_position))*10e-7
+        solver = nlopt.opt(algorithm, len(positions) + 1)
+        solver.set_min_objective(f)
+        solver.set_maxeval(maxIter)
+        solver.set_ftol_rel(1e-5)
+        solver.add_inequality_mconstraint(
+            lambda r, x, g: c(r, x, g, params, perturb), np.array([1e-4])
+        )
+        x[:] = solver.optimize(x)
+    run_num += 1
 
 newPositions = best_position
 obj = des.Objective(newPositions, params)
