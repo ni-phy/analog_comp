@@ -107,6 +107,7 @@ for i in range(len(positions)):
     delta = sens_analysis(positions, i, controlRadius, params, 1e-5)
     plt.scatter(int(i/2), np.log10(np.abs(delta)), c='k', marker='x' if atype[int(i/2)]==1 else 'o')
 
+plt.xticks(np.arange(0, nAlpha))
 plt.ylabel('$Log_{10} \dfrac{ \Delta F}{ \Delta x}$')
 plt.xlabel('Particle Number (x/y)')
 plt.savefig(title+'_plot.pdf')
