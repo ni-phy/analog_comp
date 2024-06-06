@@ -87,7 +87,7 @@ def remove_gyro(positions, atype):
     return np.array(diel_pos)
 
 #
-title = '../analog/fixed/des_fixed'
+title = '../analog/fixedGL/des_fixed'
 targetName = 'test_g_stif.data'
 posName = 'test_g_pos.data'
 # parameters
@@ -190,7 +190,7 @@ solver.set_upper_bounds(controlRadius*np.ones(len(best_position)))
 solver.set_min_objective(lambda a, g: global_obj(a, params, perturb))
 solver.set_maxeval(1000)
 solver.set_ftol_rel(1e-5)
-x[:] = solver.optimize(best_position)
+x = solver.optimize(best_position)
 
 plt.figure()
 plt.plot(np.log10(gl_hist))

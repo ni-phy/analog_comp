@@ -18,7 +18,7 @@ plt.rcParams['mathtext.fontset'] = 'cm'
 plt.rcParams['mathtext.rm'] = 'serif'
 
 #
-title = '../analog/des_g_norm'
+title = '../analog/GLGyro/des_diel'
 targetName = 'test_g_stif.data'
 posName = 'test_g_pos.data'
 # parameters
@@ -125,22 +125,22 @@ def global_obj(x, params, perturb):
     return f0
 
 #Starting Global
-# x = np.array(positions)
+x = np.array(positions)
 
-# global_algo = nlopt.GN_ESCH#GD_STOGO_RAND#
+global_algo = nlopt.GN_ESCH#GD_STOGO_RAND#
 
-# solver = nlopt.opt(global_algo, len(positions))
-# solver.set_lower_bounds(-controlRadius*np.ones(len(positions)))
-# solver.set_upper_bounds(controlRadius*np.ones(len(positions)))
-# solver.set_min_objective(lambda a, g: global_obj(a, params, perturb))
-# solver.set_maxeval(1000)
-# solver.set_ftol_rel(1e-5)
-# x[:] = solver.optimize(best_position)
+solver = nlopt.opt(global_algo, len(positions))
+solver.set_lower_bounds(-controlRadius*np.ones(len(positions)))
+solver.set_upper_bounds(controlRadius*np.ones(len(positions)))
+solver.set_min_objective(lambda a, g: global_obj(a, params, perturb))
+solver.set_maxeval(1000)
+solver.set_ftol_rel(1e-5)
+x[:] = solver.optimize(best_position)
 
-# plt.figure()
-# plt.plot(np.log10(gl_hist))
-# plt.savefig(title+'gl_eval_history')
-# plt.close()
+plt.figure()
+plt.plot(np.log10(gl_hist))
+plt.savefig(title+'_gl_eval_history')
+plt.close()
 
 #Starting Local
 
