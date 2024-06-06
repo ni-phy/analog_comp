@@ -17,6 +17,21 @@ plt.rcParams['font.sans-serif'] = ['Times New Roman']
 plt.rcParams['mathtext.fontset'] = 'cm'
 plt.rcParams['mathtext.rm'] = 'serif'
 
+gl_hist = []
+
+def global_obj(x, params, perturb):
+    w = fixed_gyro(x, positions, atype)
+    f0 = des.Objective(w,params)
+    
+    print('iter: ', len(gl_hist), "Cost: ", f0, flush=True)
+    gl_hist.append(f0)
+
+    if f0<max_f0[0]:
+        max_f0[0] = f0
+        global best_position
+        best_position = np.copy(x)
+
+    return f0
 
 def c(result, x, gradient, params, perturb, atype, positions):
     t = x[0]  # dummy parameter
@@ -166,9 +181,25 @@ eval_it = [0]
 max_f0 = [1e10]
 diel_pos = remove_gyro(positions, atype)
 best_position = diel_pos
+
+global_algo = nlopt.GN_ESCH#GD_STOGO_RAND#
+
+solver = nlopt.opt(global_algo, len(best_position))
+solver.set_lower_bounds(-controlRadius*np.ones(len(best_position)))
+solver.set_upper_bounds(controlRadius*np.ones(len(best_position)))
+solver.set_min_objective(lambda a, g: global_obj(a, params, perturb))
+solver.set_maxeval(1000)
+solver.set_ftol_rel(1e-5)
+x[:] = solver.optimize(best_position)
+
+plt.figure()
+plt.plot(np.log10(gl_hist))
+plt.savefig(title+'gl_eval_history')
+plt.close()
+
 #Starting Local
 
-x = np.insert(diel_pos, 0, 0)
+x = np.insert(x, 0, 0)
 
 algorithm = nlopt.LD_MMA
 
