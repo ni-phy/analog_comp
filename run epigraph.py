@@ -77,13 +77,6 @@ for ii in range(300):
         distFlag = 0
         break
 
-with open(posName) as f:
-    data = [[float(num) for num in line.split()] for line in f]
-for jj in range(1):
-        positions[2*jj] = data[jj][0]
-        positions[2*jj+1] = data[jj][1]
-        atype[jj] = data[jj][2]
-
 distFlag = des.DistanceCheck(positions,radii,offset)
 if distFlag == 1:
     print("rerun")
