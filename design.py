@@ -1,6 +1,8 @@
 #!/usr/bin/env python
+from scipy import optimize
 import scat as scat
 import numpy as np
+from autograd import numpy as npa
 import gyroGen as gyro
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -11,6 +13,11 @@ mpl.use('Agg')
 ## INVERSE ROUTINES   ###################################################
 #########################################################################
 #
+
+def ObjGrad(trial, params, perturb):
+    obj= Objective(trial, params)
+    return obj, Gradient(trial, params, obj, perturb)
+
 def Objective(trial, params):
     positions = trial
     alphas = params[0]
@@ -23,6 +30,7 @@ def Objective(trial, params):
     target = params[7]
     smat = scat.GetScatteringMatrix(positions,alphas,omega,cHost,epHost,nPort,obsRadius,normalize)
     obj = 0.0
+    norm = np.max(np.real(np.matmul(target,smat)))
     for ii in range(nPort):
         val = np.matmul(target,smat[:,ii])-np.identity(nPort)[:,ii]
         obj += np.real(np.vdot(val,val))
@@ -31,9 +39,9 @@ def Objective(trial, params):
 #
 def Gradient(trial, params, obj, perturb):
     N = len(trial)
-    gradient = np.zeros(N,dtype=np.double)
+    gradient = npa.zeros(N,dtype=np.double)
     for ii in range(N):
-        positions = np.copy(trial)
+        positions = npa.copy(trial)
         positions[ii] +=   perturb
         objA = Objective(positions, params)
         #positions[ii] -= 2*perturb
@@ -79,6 +87,7 @@ def Inverse(trial,params,radii,offset,perturb,
     lengthA = 1.0
     cgRef = True
     iterMin = 0
+    obj_arr = []
     for iiter in range(1,maxIter):
         if obj/objZero < errTol:
             flag = 1
@@ -103,11 +112,18 @@ def Inverse(trial,params,radii,offset,perturb,
             else:
                 lengthA = lengthA * 0.9
         print(iiter,f"\t{newObj/objZero:e}\t{bkIter}\t{nParam}")
+        obj_arr.append(newObj/objZero)
         if bkIter < 9:
             trial = np.copy(newTrial)
             obj = newObj
         else:
             break
+
+    plt.figure()
+    plt.plot(range(0,len(obj_arr)), obj_arr)
+    plt.savefig(title+'_cost')
+    plt.close()
+
     return trial,obj,flag
 #########################################################################
 
