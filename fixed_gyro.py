@@ -18,6 +18,30 @@ plt.rcParams['mathtext.fontset'] = 'cm'
 plt.rcParams['mathtext.rm'] = 'serif'
 
 gl_hist = []
+#
+title = '../analog/Fixed2/des_fixed'
+targetName = 'test_g2_stif.data'
+posName = 'test_g2_pos.data'
+# parameters
+vacuumC = 299792458
+vacuumMu = 4.0e-7*np.pi
+vacuumEpsilon = 1.0/vacuumMu/vacuumC/vacuumC
+epHost = vacuumEpsilon
+cHost = vacuumC
+siEpsilon = 12*vacuumEpsilon
+omega = 1e12
+omegap = omega*2.1
+omegac = np.sqrt( (omega/omegap)*(omega/omegap) - 1.0 + 0.25/(omega/omegap)/(omega/omegap) ) * omegap
+print(omegac/omegap)
+wavelength = 2.0*np.pi*cHost/omega
+radius = wavelength * 0.01
+loss = 0.0
+alphaG = gyro.GetAlpha_Gyro(omega,omegap,omegac,cHost,epHost,radius,loss)
+alphaD = gyro.GetAlpha_Dielectric(omega,siEpsilon,cHost,epHost,radius,loss)
+# design parameters
+nAlpha = 5
+alphas = []
+atype = np.zeros(nAlpha,dtype=np.int32)
 
 def global_obj(x, params, perturb):
     w = fixed_gyro(x, positions, atype)
@@ -38,7 +62,6 @@ def c(result, x, gradient, params, perturb, atype, positions):
     v = x[1:] # design parameters
 
     w_gyro = fixed_gyro(v, positions, atype)
-    print('v',v,'w',w_gyro)
     f0 = des.Objective(w_gyro, params)
     my_grad_tot = des.Gradient(w_gyro, params, f0, perturb) 
 
@@ -86,30 +109,7 @@ def remove_gyro(positions, atype):
 
     return np.array(diel_pos)
 
-#
-title = '../analog/fixedGL/des_fixed'
-targetName = 'test_g_stif.data'
-posName = 'test_g_pos.data'
-# parameters
-vacuumC = 299792458
-vacuumMu = 4.0e-7*np.pi
-vacuumEpsilon = 1.0/vacuumMu/vacuumC/vacuumC
-epHost = vacuumEpsilon
-cHost = vacuumC
-siEpsilon = 12*vacuumEpsilon
-omega = 1e12
-omegap = omega*2.1
-omegac = np.sqrt( (omega/omegap)*(omega/omegap) - 1.0 + 0.25/(omega/omegap)/(omega/omegap) ) * omegap
-print(omegac/omegap)
-wavelength = 2.0*np.pi*cHost/omega
-radius = wavelength * 0.01
-loss = 0.0
-alphaG = gyro.GetAlpha_Gyro(omega,omegap,omegac,cHost,epHost,radius,loss)
-alphaD = gyro.GetAlpha_Dielectric(omega,siEpsilon,cHost,epHost,radius,loss)
-# design parameters
-nAlpha = 5
-alphas = []
-atype = np.zeros(nAlpha,dtype=np.int32)
+
 
 ## atype == 0: dielectric; == 1: gyrotropic
 
@@ -164,7 +164,7 @@ for ii in range(nPort):
         target[ii,jj] = data[ii][2*jj]+1j*data[ii][2*jj+1]
 
 params = [alphas,omega,cHost,epHost,nPort,obsRadius,normalize,target]
-perturb = radius*1.0e-3
+perturb = radius*1.0e-10
 maxIter = 100
 clength = radius*1.0e-1
 
@@ -175,26 +175,31 @@ max_f0 = [1e10]
 diel_pos = remove_gyro(positions, atype)
 best_position = diel_pos
 
-global_algo = nlopt.GN_ESCH#GD_STOGO_RAND#
+# global_algo = nlopt.GN_ESCH#GD_STOGO_RAND#
 
-solver = nlopt.opt(global_algo, len(best_position))
-solver.set_lower_bounds(-controlRadius*np.ones(len(best_position)))
-solver.set_upper_bounds(controlRadius*np.ones(len(best_position)))
-solver.set_min_objective(lambda a, g: global_obj(a, params, perturb))
-solver.set_maxeval(1000)
-solver.set_ftol_rel(1e-5)
-x = solver.optimize(best_position)
+# solver = nlopt.opt(global_algo, len(best_position))
+# solver.set_lower_bounds(-controlRadius*np.ones(len(best_position)))
+# solver.set_upper_bounds(controlRadius*np.ones(len(best_position)))
+# solver.set_min_objective(lambda a, g: global_obj(a, params, perturb))
+# solver.set_maxeval(5000)
+# solver.set_ftol_rel(1e-5)
+# x = solver.optimize(best_position)
 
-plt.figure()
-plt.plot(np.log10(gl_hist))
-plt.savefig(title+'gl_eval_history')
-plt.close()
+# plt.figure()
+# plt.plot(np.log10(gl_hist))
+# plt.savefig(title+'_gl_eval_history')
+# plt.close()
 
 #Starting Local
 
-x = np.insert(x, 0, 0)
+x = np.insert(best_position, 0, 0)
 
 algorithm = nlopt.LD_MMA
+lb = -controlRadius*np.ones(len(best_position))
+ub = controlRadius*np.ones(len(best_position))
+
+lb = np.insert(lb, 0, -np.inf)
+ub = np.insert(ub, 0, 0)
 
 def f(x, grad):
     t = x[0]  # "dummy" parameter
@@ -207,13 +212,16 @@ def f(x, grad):
 for i in range(0,10):
     print('Optimization Number: ', i)
     if i>0:
-        x[1:] = best_position+(np.random.randint(0,10, size=len(best_position))-0.5)*controlRadius*10e-2
+        x[1:] = best_position+(np.random.randint(0,10, size=len(best_position))-0.5)*controlRadius*10e-3
+
     solver = nlopt.opt(algorithm, len(diel_pos) + 1)
+    solver.set_lower_bounds(lb)
+    solver.set_upper_bounds(ub)
     solver.set_min_objective(f)
     solver.set_maxeval(maxIter)
-    solver.set_ftol_rel(1e-4)
+    solver.set_ftol_rel(1e-5)
     solver.add_inequality_mconstraint(
-        lambda r, x, g: c(r, x, g, params, perturb, atype, init_positions), np.array([1e-4])
+        lambda r, x, g: c(r, x, g, params, perturb, atype, init_positions), np.array([1e-5])
     )
     x[:] = solver.optimize(x)
 
