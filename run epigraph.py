@@ -18,8 +18,9 @@ plt.rcParams['mathtext.fontset'] = 'cm'
 plt.rcParams['mathtext.rm'] = 'serif'
 
 #
-title = '../analog/GLGyro/des_diel'
-targetName = 'test_g_stif.data'
+title = '../analog/NormDielPDE/des_diel'
+print(title) #To keep track of slurm jobs
+targetName = 'test_A.data'
 posName = 'test_g_pos.data'
 # parameters
 vacuumC = 299792458
@@ -55,7 +56,7 @@ positions = np.zeros(nAlpha*2, dtype=np.double)
 
 #atype = np.random.randint(2,size=nAlpha)
 atype = np.zeros(nAlpha)
-atype[0] = 1
+# atype[0] = 1
 #atype = np.ones(nAlpha)
 for ii in range(nAlpha):
     if atype[ii] == 0:
@@ -107,7 +108,7 @@ best_position = positions
 def global_obj(x, params, perturb):
     f0 = des.Objective(x,params)
     
-    print(f0, flush=True)
+    print('iter: ', len(gl_hist), "Cost: ", f0, flush=True)
     gl_hist.append(f0)
 
     if f0<max_f0[0]:
@@ -120,15 +121,18 @@ def global_obj(x, params, perturb):
 #Starting Global
 x = np.array(positions)
 
-global_algo = nlopt.GN_ESCH#GD_STOGO_RAND#
+global_algo = nlopt.GN_ESCH#
 
+i=0
+# while i<5:
 solver = nlopt.opt(global_algo, len(positions))
-solver.set_lower_bounds(-controlRadius*np.ones(len(positions)))
+solver.set_lower_bounds(-controlRadius  *np.ones(len(positions)))
 solver.set_upper_bounds(controlRadius*np.ones(len(positions)))
 solver.set_min_objective(lambda a, g: global_obj(a, params, perturb))
-solver.set_maxeval(1000)
+solver.set_maxeval(5000)
 solver.set_ftol_rel(1e-5)
-x[:] = solver.optimize(best_position)
+x[:] = solver.optimize(x)
+# i += 1
 
 plt.figure()
 plt.plot(np.log10(gl_hist))
@@ -137,9 +141,14 @@ plt.close()
 
 #Starting Local
 
-x = np.insert(best_position, 0, 0)
+x = np.insert(best_position, 0, 1e2)
 
 algorithm = nlopt.LD_MMA
+lb = -controlRadius*np.ones(len(best_position))
+ub = controlRadius*np.ones(len(best_position))
+
+lb = np.insert(lb, 0, 0)
+ub = np.insert(ub, 0, np.inf)
 
 def f(x, grad):
     t = x[0]  # "dummy" parameter
@@ -173,31 +182,16 @@ def c(result, x, gradient, params, perturb):
 
 run_num = 0
 
-#while max_f0[0]>1:
-#    if run_num > 0:
-#        for ii in range(300):
-#            rr = np.random.rand(nAlpha)*controlRadius
-#            aa = np.random.rand(nAlpha)*2.0*np.pi
-#            for jj in range(nAlpha):
-#                positions[2*jj] = rr[jj]*np.cos(aa[jj])
-#                positions[2*jj+1] = rr[jj]*np.sin(aa[jj])
-#            if des.DistanceCheck(positions,radii,offset) == 0:
-#                distFlag = 0
-#                break
-#        distFlag = des.DistanceCheck(positions,radii,offset)
-#        if distFlag == 1:
-#            print("rerun")
-#            exit()
-#      run_num += 1
-
 for i in range(0,10):
     print('Optimization Number: ', i)
     if i>0:
         x[1:] = best_position+np.random.randint(0,10, size=len(best_position))*10e-7
     solver = nlopt.opt(algorithm, len(positions) + 1)
     solver.set_min_objective(f)
+    solver.set_lower_bounds(lb)
+    solver.set_upper_bounds(ub)
     solver.set_maxeval(maxIter)
-    solver.set_ftol_rel(1e-4)
+    solver.set_ftol_rel(1e-5)
     solver.add_inequality_mconstraint(
         lambda r, x, g: c(r, x, g, params, perturb), np.array([1e-4])
     )
@@ -229,7 +223,7 @@ maxstif = np.max(np.max(np.abs(stif)))
 scat.printMat(np.real(smat),title+'_re',-1,1)
 scat.printMat(np.imag(smat),title+'_im',-1,1)
 scat.printMat(np.abs(smat),title+'_abs',0,1)
-scat.printMat(np.real(mult),title+'_mult',0,1)
+scat.printMat(np.real(mult)/maxmult,title+'_mult',0,1)
 scat.printMat(np.real(stif),title+'_inv_re',-maxstif,maxstif)
 scat.printMat(np.imag(stif),title+'_inv_im',-maxstif,maxstif)
 scat.printMat(np.abs(stif),title+'_inv_abs',0,maxstif)
