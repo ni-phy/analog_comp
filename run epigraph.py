@@ -35,20 +35,18 @@ def par_grad(v, params, f0, perturb):
     q = queue.Queue()
     for i in range(len(v)):
         a[i] = threading.Thread(target=Singular_Gradient, args=[v, params, f0, perturb, i, q])
-        print(i)
 
     for j in range(len(v)):
-        print(a[j])
-
         task = a[j]
         task.start()
+        grad = q.get()
+        gradients[j] = grad[j]
     
     for k in range(len(v)):
         task = a[k]
         task.join()
-        print(a[k])
-    grad = q.get()
-    return grad
+    
+    return gradients
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
@@ -84,7 +82,7 @@ if rank == 0:
     alphaG = gyro.GetAlpha_Gyro(omega,omegap,omegac,cHost,epHost,radius,loss)
     alphaD = gyro.GetAlpha_Dielectric(omega,siEpsilon,cHost,epHost,radius,loss)
     # design parameters
-    nAlpha = 5
+    nAlpha = 20
     alphas = []
     atype = np.zeros(nAlpha,dtype=np.int32)
 
@@ -165,7 +163,7 @@ if rank == 0:
 
     f0 = des.Objective(positions, params)
 
-    print('par_grad', threading.Thread(target=par_grad(positions, params, f0, perturb)))
+    print('par_grad',par_grad(positions, params, f0, perturb))
 
     #Starting Global
     x = np.array(positions) 
@@ -178,7 +176,7 @@ if rank == 0:
     solver.set_lower_bounds(-controlRadius  *np.ones(len(positions)))
     solver.set_upper_bounds(controlRadius*np.ones(len(positions)))
     solver.set_min_objective(lambda a, g: global_obj(a, params, perturb))
-    solver.set_maxeval(5000)
+    solver.set_maxeval(50)
     solver.set_ftol_rel(1e-5)
     x[:] = solver.optimize(x)
     # i += 1
@@ -207,7 +205,7 @@ if rank == 0:
     scat.printMat(np.real(stif),title+'_inv_re',-maxstif,maxstif)
     scat.printMat(np.imag(stif),title+'_inv_im',-maxstif,maxstif)
     scat.printMat(np.abs(stif),title+'_inv_abs',0,maxstif)
-    scat.printPos(newPositions,title+'_pos',controlRadius,-obsRadius,obsRadius,wavelength,atype)
+    scat.printPos(best_position,title+'_pos',controlRadius,-obsRadius,obsRadius,wavelength,atype)
 
     ###
 
@@ -237,7 +235,7 @@ if rank == 0:
         v = x[1:] # design parameters
 
         f0 = des.Objective(v, params)
-        my_grad = des.Gradient(v, params, f0, perturb) 
+        my_grad = par_grad(v, params, f0, perturb) 
 
         print('Eval', eval_it, 'Cost', f0, flush=True)
         eval_history.append(f0)
