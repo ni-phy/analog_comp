@@ -37,10 +37,10 @@ plt.rcParams['mathtext.fontset'] = 'cm'
 plt.rcParams['mathtext.rm'] = 'serif'
 
 #
-title = '../analog/trial/des_'
+title = '../analog/StoGO/des_'
 if rank == 0:
     print(title) #To keep track of slurm jobs
-targetName = 'test_A.data'
+targetName = 'test_3_A.data'
 posName = 'test_g_pos.data'
 # parameters
 vacuumC = 299792458
@@ -58,7 +58,7 @@ loss = 0.0
 alphaG = gyro.GetAlpha_Gyro(omega,omegap,omegac,cHost,epHost,radius,loss)
 alphaD = gyro.GetAlpha_Dielectric(omega,siEpsilon,cHost,epHost,radius,loss)
 # design parameters
-nAlpha = 30
+nAlpha = 15
 alphas = []
 atype = np.zeros(nAlpha,dtype=np.int32)
 
@@ -75,7 +75,7 @@ positions = np.zeros(nAlpha*2, dtype=np.double)
 
 #atype = np.random.randint(2,size=nAlpha)
 atype = np.zeros(nAlpha)
-# atype[:5] = 1
+atype[:3] = 1
 #atype = np.ones(nAlpha)
 for ii in range(nAlpha):
     if atype[ii] == 0:
@@ -84,7 +84,7 @@ for ii in range(nAlpha):
         alphas.append(alphaG)
 radii = np.ones(nAlpha)*radius
 offset = 0.0
-controlRadius = 6*wavelength
+controlRadius = 3*wavelength
 distFlag = 1
 
 for ii in range(300):
@@ -102,7 +102,7 @@ if distFlag == 1:
     print("rerun")
     exit()
 # port definition
-nPort = 5
+nPort = 3
 obsRadius = controlRadius*1.5
 normalize = True
 #
@@ -114,7 +114,7 @@ for ii in range(nPort):
         target[ii,jj] = data[ii][2*jj]+1j*data[ii][2*jj+1]
 
 params = [alphas,omega,cHost,epHost,nPort,obsRadius,normalize,target]
-perturb = radius*1.0e-11
+perturb = radius*1.0e-10
 maxIter = 100
 clength = radius*1.0e-1
 
@@ -135,20 +135,17 @@ def global_obj(x, params, perturb):
         global best_position
         best_position = np.copy(x)
 
-    return f0
+    return f0, singular_gradient_wrapper(x)
 
 f0 = des.Objective(positions, params)
 def singular_gradient_wrapper(pos):
     return Singular_Gradient(positions, params, f0, perturb, pos)
 
-
-
-
 if rank==0:
     #Starting Global
     x = np.array(positions) 
 
-    global_algo = nlopt.GN_ESCH#
+    global_algo = nlopt.GD_STOGO_RAND#GN_ESCH#
 
     i=0
     # while i<5:
@@ -174,6 +171,7 @@ if rank==0:
     plt.figure()
     plt.plot()
 
+if __name__ == '__main__' and rank == 0:
     maxabs = np.max(np.abs(smat))
     mult = np.matmul(smat,target)
     maxmult= np.max(np.real(mult))
@@ -214,10 +212,9 @@ def c(result, x, gradient, params, perturb):
 
     f0 = des.Objective(v, params)
     if __name__ == '__main__':
-
         with MPIPoolExecutor() as pool:
-            my_grad = npa.sum(list(pool.map(singular_gradient_wrapper, range(len(positions)))),axis=0)
-
+            my_grad = npa.sum(list(pool.map(singular_gradient_wrapper, positions)),axis=0)
+    print(my_grad)
     print('Eval', eval_it, 'Cost', f0, flush=True)
     eval_history.append(f0)
     if f0<max_f0[0]:
@@ -248,6 +245,8 @@ if rank==0:
             lambda r, x, g: c(r, x, g, params, perturb), np.array([1e-3])
         )
         x[:] = solver.optimize(x)
+
+if __name__ == '__main__' and rank == 0:
 
     newPositions = best_position
     obj = des.Objective(newPositions, params)
