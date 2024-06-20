@@ -25,6 +25,13 @@ def Singular_Gradient(trial, params, obj, perturb, ii):
     gradient[ii] = (objA-obj)/perturb
     return gradient
 
+class GradientWrapper:
+    def __init__(self, v, f0):
+        self.v = v
+        self.f0 = f0
+
+    def singular_gradient(self, pos):
+        return Singular_Gradient(self.v, params, self.f0, perturb, pos)
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
@@ -37,7 +44,7 @@ plt.rcParams['mathtext.fontset'] = 'cm'
 plt.rcParams['mathtext.rm'] = 'serif'
 
 #
-title = '../analog/StoGO/des_'
+title = '../analog/StoGo/des'
 if rank == 0:
     print(title) #To keep track of slurm jobs
 targetName = 'test_3_A.data'
@@ -135,11 +142,9 @@ def global_obj(x, params, perturb):
         global best_position
         best_position = np.copy(x)
 
-    return f0, singular_gradient_wrapper(x)
+    return f0
 
 f0 = des.Objective(positions, params)
-def singular_gradient_wrapper(pos):
-    return Singular_Gradient(positions, params, f0, perturb, pos)
 
 if rank==0:
     #Starting Global
@@ -149,13 +154,13 @@ if rank==0:
 
     i=0
     # while i<5:
-    solver = nlopt.opt(global_algo, len(positions))
-    solver.set_lower_bounds(-controlRadius  *np.ones(len(positions)))
-    solver.set_upper_bounds(controlRadius*np.ones(len(positions)))
-    solver.set_min_objective(lambda a, g: global_obj(a, params, perturb))
-    solver.set_maxeval(5000)
-    solver.set_ftol_rel(1e-5)
-    x[:] = solver.optimize(x)
+    # solver = nlopt.opt(global_algo, len(positions))
+    # solver.set_lower_bounds(-controlRadius  *np.ones(len(positions)))
+    # solver.set_upper_bounds(controlRadius*np.ones(len(positions)))
+    # solver.set_min_objective(lambda a, g: global_obj(a, params, perturb))
+    # solver.set_maxeval(5000)
+    # solver.set_ftol_rel(1e-5)
+    # x[:] = solver.optimize(x)
     # i += 1
 
     plt.figure()
@@ -209,12 +214,16 @@ def f(x, grad):
 def c(result, x, gradient, params, perturb):
     t = x[0]  # dummy parameter
     v = x[1:] # design parameters
+    v_list = [i for i in v]
 
     f0 = des.Objective(v, params)
+    
+# In your main function:
     if __name__ == '__main__':
         with MPIPoolExecutor() as pool:
-            my_grad = npa.sum(list(pool.map(singular_gradient_wrapper, positions)),axis=0)
-    print(my_grad)
+            wrapper = GradientWrapper(v, f0)
+            my_grad = np.sum(list(pool.map(wrapper.singular_gradient, range(len(v)))), axis=0)
+
     print('Eval', eval_it, 'Cost', f0, flush=True)
     eval_history.append(f0)
     if f0<max_f0[0]:
