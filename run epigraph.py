@@ -48,7 +48,7 @@ title = '../analog/GyroPDE/mult_gyro'
 if rank == 0:
     print(title) #To keep track of slurm jobs
 targetName = 'trial_gyro_A.data'
-posName = '../analog/GyroPDE/trial_gyro_pos.data'
+posName = '../analog/GyroPDE/trial_grad_pos.data'
 # parameters
 vacuumC = 299792458
 vacuumMu = 4.0e-7*np.pi
@@ -91,7 +91,7 @@ for ii in range(nAlpha):
         alphas.append(alphaG)
 radii = np.ones(nAlpha)*radius
 offset = 0.0
-controlRadius = 5*wavelength
+controlRadius = 6*wavelength
 distFlag = 1
 for ii in range(300):
     rr = np.random.rand(nAlpha)*controlRadius
@@ -169,68 +169,69 @@ if rank==0:
     lb = np.insert(lb, 0, 0.5)
     ub = np.insert(ub, 0, 1e3)
 
-    i=0
-    solver = nlopt.opt(global_algo, len(x))
-    solver.set_lower_bounds(lb)
-    solver.set_upper_bounds(ub)
-    solver.set_min_objective(lambda a, g: global_obj(a, params, perturb))
-    solver.set_maxeval(10000)
-    solver.set_ftol_rel(1e-5)
-    x[:] = solver.optimize(x)
-    i += 1
+    # i=0
+    # solver = nlopt.opt(global_algo, len(x))
+    # solver.set_lower_bounds(lb)
+    # solver.set_upper_bounds(ub)
+    # solver.set_min_objective(lambda a, g: global_obj(a, params, perturb))
+    # solver.set_maxeval(10000)
+    # solver.set_ftol_rel(1e-5)
+    # x[:] = solver.optimize(x)
+    # i += 1
 
-    plt.figure()
-    plt.plot(np.log10(gl_hist))
-    plt.savefig(title+'_gl_eval_history')
-    plt.close()
+    # plt.figure()
+    # plt.plot(np.log10(gl_hist))
+    # plt.savefig(title+'_gl_eval_history')
+    # plt.close()
 
-    #Intermediately Plots
+    # #Intermediately Plots
 
-    smat = scat.GetScatteringMatrix(best_position,alphas,omega,cHost,epHost,nPort,obsRadius,normalize)
-    stif = np.linalg.inv(smat)
+    # smat = scat.GetScatteringMatrix(best_position,alphas,omega,cHost,epHost,nPort,obsRadius,normalize)
+    # stif = np.linalg.inv(smat)
 
-    plt.figure()
-    plt.plot()
+    # plt.figure()
+    # plt.plot()
 
-    smat = scat.GetScatteringMatrix(best_position,alphas,omega,cHost,epHost,nPort,obsRadius,normalize)
-    stif = np.linalg.inv(smat)
+    # smat = scat.GetScatteringMatrix(best_position,alphas,omega,cHost,epHost,nPort,obsRadius,normalize)
+    # stif = np.linalg.inv(smat)
 
-    maxabs = np.max(np.abs(smat))
-    mult = best_mult[0]*np.matmul(smat,target)
-    maxmult= np.max(np.real(mult))
-    maxstif = np.max(np.max(np.abs(stif)))
-    maxsmat = np.max(np.max(np.abs(smat)))
-    scat.printMat(np.real(smat),title+'_re',-maxsmat,maxsmat)
-    scat.printMat(np.imag(smat),title+'_im',-maxsmat,maxsmat)
-    scat.printMat(np.abs(smat),title+'_abs',0,)
-    scat.printMat(np.real(mult),title+'_mult',0,1)
-    scat.printMat(np.real(stif),title+'_inv_re',-maxstif,maxstif)
-    scat.printMat(np.imag(stif),title+'_inv_im',-maxstif,maxstif)
-    scat.printMat(np.abs(stif),title+'_inv_abs',0,maxstif)
-    scat.printPos(best_position,title+'_pos',controlRadius,-obsRadius,obsRadius,wavelength,atype)
+    # maxabs = np.max(np.abs(smat))
+    # mult = best_mult[0]*np.matmul(smat,target)
+    # maxmult= np.max(np.real(mult))
+    # maxstif = np.max(np.max(np.abs(stif)))
+    # maxsmat = np.max(np.max(np.abs(smat)))
+    # print('multiplier', best_mult)
+    # scat.printMat(np.real(smat),title+'_re',-maxsmat,maxsmat)
+    # scat.printMat(np.imag(smat),title+'_im',-maxsmat,maxsmat)
+    # scat.printMat(np.abs(smat),title+'_abs',0,)
+    # scat.printMat(np.real(mult),title+'_mult',0,1)
+    # scat.printMat(np.real(stif),title+'_inv_re',-maxstif,maxstif)
+    # scat.printMat(np.imag(stif),title+'_inv_im',-maxstif,maxstif)
+    # scat.printMat(np.abs(stif),title+'_inv_abs',0,maxstif)
+    # scat.printPos(best_position,title+'_pos',controlRadius,-obsRadius,obsRadius,wavelength,atype)
     
-    fout = open(title+"_mult.data","w")
-    for ii in range(nPort):
-        for jj in range(nPort):
-            fout.write(f"{np.real(mult[ii,jj]):20.10e}\t{np.imag(mult[ii,jj]):20.10e}\t")
-        fout.write(f"\n")
-    fout.close()
-    fout = open(title+"_scat.data","w")
-    for ii in range(nPort):
-        for jj in range(nPort):
-            fout.write(f"{np.real(smat[ii,jj]):20.10e}\t{np.imag(smat[ii,jj]):20.10e}\t")
-        fout.write(f"\n")
-    fout.close()
-    fout = open(title+"_stif.data","w")
-    for ii in range(nPort):
-        for jj in range(nPort):
-            fout.write(f"{np.real(stif[ii,jj]):20.10e}\t{np.imag(stif[ii,jj]):20.10e}\t")
-        fout.write(f"\n")
-    fout.close()
-    fout = open(title+"_pos.data","w")
-    for ii in range(nAlpha):
-        fout.write(f"{best_position[2*ii]:20.10e}\t{best_position[2*ii+1]:20.10e}\t{atype[ii]}\n")
-    fout.close()
+    # fout = open(title+"_mult.data","w")
+    # for ii in range(nPort):
+    #     for jj in range(nPort):
+    #         fout.write(f"{np.real(mult[ii,jj]):20.10e}\t{np.imag(mult[ii,jj]):20.10e}\t")
+    #     fout.write(f"\n")
+    # fout.close()
+    # fout = open(title+"_scat.data","w")
+    # for ii in range(nPort):
+    #     for jj in range(nPort):
+    #         fout.write(f"{np.real(smat[ii,jj]):20.10e}\t{np.imag(smat[ii,jj]):20.10e}\t")
+    #     fout.write(f"\n")
+    # fout.close()
+    # fout = open(title+"_stif.data","w")
+    # for ii in range(nPort):
+    #     for jj in range(nPort):
+    #         fout.write(f"{np.real(stif[ii,jj]):20.10e}\t{np.imag(stif[ii,jj]):20.10e}\t")
+    #     fout.write(f"\n")
+    # fout.close()
+    # fout = open(title+"_pos.data","w")
+    # for ii in range(nAlpha):
+    #     fout.write(f"{best_position[2*ii]:20.10e}\t{best_position[2*ii+1]:20.10e}\t{atype[ii]}\n")
+    # fout.close()
 
     ###
 
@@ -249,7 +250,7 @@ def c(result, x, gradient, params, perturb):
     v = x[1:] # design parameters
     f0 = des.Objective(v, params)
     
-# In your main function:
+    # In your main function:
     if __name__ == '__main__':
         with MPIPoolExecutor() as pool:
             wrapper = GradientWrapper(v, f0)
@@ -260,7 +261,8 @@ def c(result, x, gradient, params, perturb):
     if f0<max_f0[0]:
         max_f0[0] = f0
         global best_position
-        best_position = np.copy(v)
+        best_position = np.copy(v[1:])
+        best_mult[0] = v[0]
 
     # Assign gradients
     if gradient.size > 0:
@@ -281,18 +283,18 @@ if rank==0:
     ub = np.insert(ub, 0, np.inf)
     for i in range(0,7):
         print('Optimization Number: ', i)
-        # x[1:] = best_position+np.random.randint(-10,10, size=len(best_position))*controlRadius*10e-4
-        # for i in range(len(x[1:])):
-        #     if x[i+1]>controlRadius:
-        #         x[i+1] = best_position[i]-np.random.randint(-5,5)*controlRadius*10e-5
-        #     elif x[i+1]<-controlRadius:
-        #         x[i+1] = best_position[i]+np.random.randint(-5,5)*controlRadius*10e-5
+        x[2:] = best_position+np.random.randint(-10,10, size=len(best_position))*controlRadius*10e-4
+        # for i in range(len(x[2:])):
+        #     if x[i+2]>controlRadius:
+        #         x[i+2] = best_position[i]-np.random.randint(-5,5)*controlRadius*10e-5
+        #     elif x[i+2]<-controlRadius:
+        #         x[i+2] = best_position[i]+np.random.randint(-5,5)*controlRadius*10e-5
         solver = nlopt.opt(algorithm, len(x))
         solver.set_min_objective(f)
         solver.set_lower_bounds(lb)
         solver.set_upper_bounds(ub)
         solver.set_maxeval(maxIter)
-        solver.set_ftol_rel(1e-3)
+        solver.set_ftol_rel(1e-4)
         solver.add_inequality_mconstraint(
             lambda r, x, g: c(r, x, g, params, perturb), np.array([1e-3])
         )
@@ -318,7 +320,8 @@ if rank==0:
         plt.plot()
 
         maxabs = np.max(np.abs(smat))
-        mult = np.matmul(smat,target)
+        print('multiplier', best_mult)
+        mult = float(best_mult)*np.matmul(smat,target)
         maxmult= np.max(np.real(mult))
         maxstif = np.max(np.max(np.abs(stif)))
         scat.printMat(np.real(smat),title+'_re',-0.4,0.4)
