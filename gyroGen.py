@@ -76,6 +76,21 @@ def GetAlpha_Gyro(omega,omegap,omegac,cHost,epHost,radius,loss=0.0):
     alpha[2,1] = 4.0*epHost/kzero/kzero *  1j *(Spos+Sneg)
     alpha[2,2] = 4.0*epHost/kzero/kzero *      (Spos-Sneg)
     return alpha
+
+def GetAlpha_GyroNR(omega,omegap,omegac,cHost,epHost,radius,loss=0.0):
+    SN,orders=GetSN_Gyro(omega,omegap,omegac,cHost,radius,1,loss)
+    Sneg  = SN[0]
+    Szero = SN[1]
+    Spos  = SN[2]
+    kzero = omega/cHost
+    alpha = np.zeros((3,3)) + 1j*np.zeros((3,3))
+    alpha[0,0] = 4.0/kzero/kzero        *  1j * Szero
+    alpha[1,1] = 4.0*epHost/kzero/kzero *      (Spos-Sneg)
+    alpha[1,2] = 4.0*epHost/kzero/kzero * 1j *(Spos+Sneg)
+    alpha[2,1] = 4.0*epHost/kzero/kzero *  1j *(Spos+Sneg)
+    alpha[2,2] = 4.0*epHost/kzero/kzero *      (Spos-Sneg)
+    return alpha
+
 ###############################################################################
 # Polarizability tensor (3x3; alpha_m and alpha_e) for a PEC cylinder
 def GetAlpha_PEC(omega,cHost,epHost,radius,loss=0.0):

@@ -44,7 +44,7 @@ plt.rcParams['mathtext.fontset'] = 'cm'
 plt.rcParams['mathtext.rm'] = 'serif'
 
 #
-title = '../analog/GyroPDE/w_ga15'
+title = '../analog/GyroPDE/w_ga17'
 if rank == 0:
     print(title) #To keep track of slurm jobs
 targetName = 'trial_gyro_A.data'
@@ -65,7 +65,7 @@ loss = 0.0
 alphaG = gyro.GetAlpha_Gyro(omega,omegap,omegac,cHost,epHost,radius,loss)
 alphaD = gyro.GetAlpha_Dielectric(omega,siEpsilon,cHost,epHost,radius,loss)
 # design parameters
-nAlpha = 44
+nAlpha = 46
 alphas = []
 atype = np.zeros(nAlpha,dtype=np.int32)
 
@@ -82,7 +82,7 @@ positions = np.zeros(nAlpha*2, dtype=np.double)
 
 #atype = np.random.randint(2,size=nAlpha)
 atype = np.zeros(nAlpha)
-atype[:30] = 1
+atype[:32] = 1
 #atype = np.ones(nAlpha)
 for ii in range(nAlpha):
     if atype[ii] == 0:
@@ -91,7 +91,7 @@ for ii in range(nAlpha):
         alphas.append(alphaG)
 radii = np.ones(nAlpha)*radius
 offset = 0.0
-controlRadius = 12*wavelength
+controlRadius = 10*wavelength
 distFlag = 1
 for ii in range(300):
     rr = np.random.rand(nAlpha)*controlRadius
@@ -180,7 +180,7 @@ if rank==0:
     solver.set_lower_bounds(lb)
     solver.set_upper_bounds(ub)
     solver.set_min_objective(lambda a, g: global_obj(a, params, perturb))
-    solver.set_maxeval(2000)
+    solver.set_maxeval(6000)
     solver.set_ftol_rel(1e-4)
     x[:] = solver.optimize(x)
     # i += 1
@@ -374,3 +374,7 @@ if rank==0:
         for ii in range(nAlpha):
             fout.write(f"{newPositions[2*ii]:20.10e}\t{newPositions[2*ii+1]:20.10e}\t{atype[ii]}\n")
         fout.close()
+        fout = open(title+"_multiplier.data","w")
+        fout.write(f"{best_mult}\n")
+        fout.close()
+

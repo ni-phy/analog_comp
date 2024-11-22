@@ -19,7 +19,8 @@ def ObjGrad(trial, params, perturb):
     return obj, Gradient(trial, params, obj, perturb)
 
 def Objective(trial, params):
-    positions = trial
+    multiplier = trial[0]
+    positions = trial[1:]
     alphas = params[0]
     omega = params[1]
     cHost = params[2]
@@ -30,10 +31,9 @@ def Objective(trial, params):
     target = params[7]
     smat = scat.GetScatteringMatrix(positions,alphas,omega,cHost,epHost,nPort,obsRadius,normalize)
     obj = 0.0
-    norm = np.max(np.real(np.matmul(target,smat)))
     for ii in range(nPort):
-        val = np.matmul(target,smat[:,ii])-np.identity(nPort)[:,ii]
-        obj += np.real(np.vdot(val,val))
+        val = multiplier*np.matmul(target,smat[:,ii])-np.identity(nPort)[:,ii]
+        obj += np.real(np.vdot(val,val))**2
     obj *= 0.5
     return obj
 #
@@ -48,6 +48,7 @@ def Gradient(trial, params, obj, perturb):
         #objB = Objective(positions, params)
         #gradient[ii] = (objA-objB)/(2.0*perturb)
         gradient[ii] = (objA-obj)/perturb
+    print('gradient', gradient, flush=True)
     return gradient
 #
 def NormalizedDistance(position1, position2, radius1, radius2):

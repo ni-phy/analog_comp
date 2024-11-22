@@ -141,8 +141,13 @@ def printPos(positions,title,domainR,minval,maxval,wavelength,atype):
         else:
             ax.plot([positions[2*ii]/wavelength],[positions[2*ii+1]/wavelength],'x',color='black')
     theta = np.linspace(0,2*np.pi,1000,endpoint=False)
-    xx = domainR*np.cos(theta)/wavelength
-    yy = domainR*np.sin(theta)/wavelength
+    xx = np.linspace(-domainR/wavelength, domainR/wavelength, 100)#domainR*np.cos(theta)/wavelength
+    yy = np.linspace(-domainR/wavelength, domainR/wavelength, 100)#domainR*np.sin(theta)/wavelength
+    line = domainR/wavelength*np.ones(len(xx))
+    ax.plot(xx,line,':',color='gray')  
+    ax.plot(line, yy, ':',color='gray')
+    ax.plot(xx,-line,':',color='gray')  
+    ax.plot(-line, yy, ':',color='gray')
     ax.plot(xx,yy,':',color='gray')  
     fontsizel=20
     fontsizet=16
@@ -175,7 +180,7 @@ def printPos(positions,title,domainR,minval,maxval,wavelength,atype):
 
 if __name__ == '__main__':
     #
-    title = 'test'
+    title = 'test_g2'
     # parameters
     vacuumC = 299792458
     vacuumMu = 4.0e-7*np.pi
@@ -202,7 +207,8 @@ if __name__ == '__main__':
     alphas = []
     ## atype == 0: dielectric; == 1: gyrotropic
     atype = np.zeros(nAlpha,dtype=np.int32)
-    #atype[int(nAlpha/2):] = 1
+    atype[:2] = 1
+    # atype[int(nAlpha/2):] = 1
     #atype = np.random.randint(2,size=nAlpha)
     #atype = np.zeros(nAlpha)
     #atype = np.ones(nAlpha)
