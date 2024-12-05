@@ -67,8 +67,8 @@ def printFunc(coeff,r_m, i_m,c,label,polar=True,kr=-1.0):
     #cbar = fig.colorbar(surface,cax=ccax)
 
 
-nPort = 5
-maxorder = 2
+nPort = 9
+maxorder = 4
 N = 2*maxorder + 1
 
 vacuumC = 299792458
@@ -84,7 +84,7 @@ kr = -10*omega/cHost*controlRadius
 # targetName = '10by10/gyro_26_v3_A.data'
 # targetName = '7by7/square_gyro_30_v4_A.data'
 # targetName = '10by10/gyro_26_v3_A.data'
-targetName = 'square_gyro26_A.data'
+targetName = '10by10/gyro_30_A.data'#'square_gyro26_A.data'
 with open(targetName) as f:
     data = [[float(num) for num in line.split()] for line in f]
 target = np.zeros((nPort,nPort),dtype=np.cdouble)
@@ -95,7 +95,7 @@ for ii in range(nPort):
 # multiplierName = '../analog/GyroPDE10/no_epi_v3_26_multiplier.data'
 # multiplierName = '../analog/GyroPDE7/no_epi_v230_multiplier.data'
 # multiplierName ='size_test/no_epi_results/no_epi_gyro_28_multiplier.data'
-multiplierName = '../analog/GyroPDE10/no_epi_trial26_multiplier.data'
+multiplierName = '../analog/GyroPDE10/no_epi_v6_45_multiplier.data'#'../analog/GyroPDE10/no_epi_trial26_multiplier.data'
 
 with open(multiplierName) as f:
     data = [[float(num[1:-1]) for num in line.split()] for line in f]
@@ -106,7 +106,7 @@ print('m', multiplier)
 # scatterName = '../analog/GyroPDE7/no_epi_v230_stif.data'
 # scatterName = '../analog/GyroPDE10/no_epi_v3_scat.data'
 # scatterName = 'size_test/no_epi_results/no_epi_gyro_28_scat.data'
-scatterName = '../analog/GyroPDE10/no_epi_trial26_stif.data'
+scatterName = '../analog/GyroPDE10/no_epi_v6_45_stif.data'#'../analog/GyroPDE10/no_epi_trial26_stif.data'
 with open(scatterName) as f:
     data = [[float(num) for num in line.split()] for line in f]
 scattering = np.zeros((nPort,nPort),dtype=np.cdouble)
@@ -118,6 +118,8 @@ coeffF = [-2,(1+1j)/np.sqrt(2),2.0,(2+1j)/np.sqrt(2),1]
 # coeffF = [(1+1j)/np.sqrt(2),(1-1j)/np.sqrt(2),2.0j,(2+1j)/np.sqrt(2),(2-1j)/np.sqrt(2),(1+2j)/np.sqrt(2),(1)/np.sqrt(2)]
 # coeffF = [2j,(1)/np.sqrt(2),(1j)/np.sqrt(2),(2+1j)/np.sqrt(2),-1+2.0j,(2j)/np.sqrt(2),(2+1j)/np.sqrt(2),(2)/np.sqrt(2),(1j)/np.sqrt(2),-2]
 coeffF = [0.5+1j,(1+1j)/np.sqrt(2),1.0+0.5j,(2+1j)/np.sqrt(2),(1-1j)/np.sqrt(2)]
+coeffF = [-2,(1+1j)/np.sqrt(2),(1+1j)/np.sqrt(2),(1+1j)/np.sqrt(2),2.0,(2+1j)/np.sqrt(2),(2+1j)/np.sqrt(2),(2+1j)/np.sqrt(2),(2+1j)/np.sqrt(2),1]
+
 b = GetRHS(coeffF,N,kr)
 
 x = np.linalg.solve(target,b)
@@ -131,5 +133,5 @@ for item in x:
 printFunc(x,'.', ':', c='b', label='$u_h$',kr=kr)
 
 # fig.tight_layout()
-plt.savefig("./"+title+"_compare_fun_5by5_v2.pdf")
+plt.savefig("./"+title+"_compare_fun_9by9.pdf")
 plt.close()
