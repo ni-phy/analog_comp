@@ -1,0 +1,15 @@
+The data used are as follows:
+
+Particles v Cost.csv is the cost for each particle size, first column indicated particle size, second cost for gyrotropic
+particles and third for PEC particles.
+
+The data from each optimisation process are in 'Data for Each Scatterer'
+-The data are seperated in folders depending on the number of particles in each analog computer.
+
+-Each folder has both non-reciprocal and reciprocal computers
+
+-non-reciprocal are labeled as data_NUM_TYPE.data, reciprocal are labeled as data_pec_NUM_TYPE.data
+
+-where (a)NUM is the number of particles, (b)TYPE is the type of data: pos for position, 
+mult for the multiplied SA matrices, multiplier for the optimised multiplier, scat (S) for scattering and,
+stif (A) for it's inverse.
